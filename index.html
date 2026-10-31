@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#080a09" />
+  <meta name="description" content="BEAMFORGE — a vehicle physics sandbox. Build it, tune it, resize it, wreck it. Proving grounds included." />
+  <title>BEAMFORGE — Vehicle Dynamics Lab</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080a09'/%3E%3Cpath d='M20 4h6L18 28h-6z' fill='%23c9ff2f'/%3E%3Cpath d='M9 4h6L7 28H1z' fill='%23f3f5ef'/%3E%3C/svg%3E" />
+  <link rel="preload" href="fonts/BarlowCondensed-900.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="preload" href="fonts/Inter-400.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="gl" aria-label="BEAMFORGE 3D vehicle sandbox"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <div id="loading" class="loading">
+    <div class="loading-mark"><span></span></div>
+    <div class="loading-word">BEAMFORGE</div>
+    <div class="loading-sub">CALIBRATING THE DYNAMOMETER</div>
+    <div class="loading-track"><i id="loadBar"></i></div>
+    <div class="loading-meta"><span>VEHICLE DYNAMICS LAB</span><span id="loadPct">00</span></div>
+  </div>
+
+  <div id="showroomUI" class="showroom-ui">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+        <div class="brand-copy">
+          <strong>BEAMFORGE</strong>
+          <span>VEHICLE DYNAMICS LAB</span>
+        </div>
+      </div>
+      <div class="top-status">
+        <span class="status-dot"></span>
+        <span>BAY 04 / SHOWROOM</span>
+        <span class="slash">/</span>
+        <span class="muted" id="topCombos">6.5B BUILDS</span>
+      </div>
+      <div class="top-actions">
+        <button class="icon-button" id="soundBtn" aria-label="Toggle engine audio">
+          <span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span id="soundLabel">AUDIO ON</span>
+        </button>
+        <button class="icon-button" id="helpBtn" aria-label="Open help">
+          <span class="help-glyph">?</span><span>HELP</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="stage-label stage-label-left" aria-hidden="true">
+      <span>38° 44' 21.0" N</span><span>PROVING GROUNDS</span>
+    </div>
+    <div class="stage-label stage-label-right" aria-hidden="true">
+      <span>ASSEMBLY 04</span><span>CHASSIS / MK II</span>
+    </div>
+
+    <aside class="build-panel" aria-label="Vehicle builder">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">BUILD LAB <i>06 SYSTEMS</i></span>
+          <h1>CONFIGURE</h1>
+        </div>
+        <div class="panel-index"><span id="tabIndex">01</span><small>/ 06</small></div>
+      </div>
+      <div class="tabs" id="buildTabs" role="tablist"></div>
+      <div class="build-content" id="buildContent" role="tabpanel"></div>
+      <div class="panel-foot">
+        <button class="ghost-button" id="randomizeBtn"><span class="dice">✦</span> RANDOMIZE <kbd>G</kbd></button>
+        <button class="ghost-button subtle" id="resetBtn">RESET</button>
+      </div>
+    </aside>
+
+    <aside class="spec-panel" aria-label="Vehicle telemetry">
+      <div class="spec-top">
+        <span class="eyebrow">LIVE TELEMETRY</span>
+        <span class="live-tag"><i></i>LIVE</span>
+      </div>
+      <div class="power-block">
+        <div class="power-value"><span id="statHp">776</span><small>HP</small></div>
+        <div class="power-caption"><span>PEAK OUTPUT</span><b id="statEngine">5.0L V8</b></div>
+      </div>
+      <div class="quick-stats">
+        <div><span>0—100</span><strong id="statZero">3.1<small>s</small></strong></div>
+        <div><span>TOP SPEED</span><strong id="statTop">318<small>km/h</small></strong></div>
+        <div><span>WEIGHT</span><strong id="statWeight">1,472<small>kg</small></strong></div>
+      </div>
+      <div class="metric-list">
+        <div class="metric"><div><span>GRIP</span><b id="gripValue">78</b></div><div class="meter"><i id="gripBar"></i></div></div>
+        <div class="metric"><div><span>AERO</span><b id="aeroValue">54</b></div><div class="meter"><i id="aeroBar"></i></div></div>
+        <div class="metric"><div><span>BRAKING</span><b id="brakeValue">76</b></div><div class="meter"><i id="brakeBar"></i></div></div>
+        <div class="metric"><div><span>BALANCE</span><b id="balanceValue">69</b></div><div class="meter"><i id="balanceBar"></i></div></div>
+      </div>
+      <div class="spec-sheet">
+        <span class="eyebrow">CURRENT SPEC</span>
+        <div class="spec-row"><span>INDUCTION</span><b id="specInduction">TWIN TURBO</b></div>
+        <div class="spec-row"><span>BODY</span><b id="specBody">WIDEBODY</b></div>
+        <div class="spec-row"><span>AERO</span><b id="specWing">SWAN NECK</b></div>
+        <div class="spec-row"><span>DRIVE</span><b id="specDrive">RWD</b></div>
+        <div class="spec-row"><span>AUDIO</span><b id="specAudio">SCREAMER</b></div>
+      </div>
+      <button class="drive-button" id="driveBtn">
+        <span class="drive-num">04</span>
+        <span class="drive-copy"><small>ENTER</small><strong>PROVING GROUNDS</strong></span>
+        <span class="drive-arrow">→</span>
+      </button>
+      <div class="drive-hint"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> DRIVE <i></i> <span class="key">SHIFT</span> BOOST</div>
+    </aside>
+
+    <footer class="garage-footer">
+      <div class="build-id">
+        <span class="eyebrow">ACTIVE BUILD</span>
+        <input id="buildNameInput" value="VANTAGE // RS" maxlength="24" aria-label="Build name" spellcheck="false" />
+        <span class="saved" id="savedTag">SAVED LOCALLY</span>
+      </div>
+      <div class="footer-center">
+        <span class="coordinate">34.0522° N / 118.2437° W</span>
+        <span class="footer-rule"></span>
+        <span>DRAG TO ORBIT &nbsp;·&nbsp; SCROLL TO ZOOM</span>
+      </div>
+      <div class="build-space">
+        <span class="eyebrow">BUILD SPACE</span>
+        <strong id="comboCount">6.5B</strong>
+        <span class="infinite">+ ∞ SLIDER COMBINATIONS</span>
+      </div>
+    </footer>
+
+    <div class="mobile-drive-wrap">
+      <button class="mobile-drive" id="driveBtnMobile">
+        <span><small>ENTER</small> PROVING GROUNDS</span><b>→</b>
+      </button>
+    </div>
+  </div>
+
+  <div id="hud" class="hud" aria-hidden="true">
+    <div class="hud-top">
+      <div class="hud-brand">
+        <span class="brand-mark small" aria-hidden="true"><i></i><i></i></span>
+        <div><strong>BEAMFORGE</strong><span id="hudMode">FREE ROAM / SECTOR 04</span></div>
+      </div>
+      <div class="hud-status">
+        <span class="status-dot"></span>
+        <span id="hudBuildName">VANTAGE // RS</span>
+        <span class="slash">/</span>
+        <b id="hudHp">776 HP</b>
+      </div>
+      <div class="hud-actions">
+        <button id="cameraBtn" class="hud-button">CAM <kbd>C</kbd></button>
+        <button id="repairBtn" class="hud-button">REPAIR <kbd>R</kbd></button>
+        <button id="pauseBtn" class="hud-button">MENU <kbd>ESC</kbd></button>
+      </div>
+    </div>
+
+    <div class="hud-left">
+      <div class="challenge-card">
+        <div class="challenge-head"><span class="eyebrow">SECTOR CHALLENGES</span><b id="challengeDone">0 / 5</b></div>
+        <ul id="challengeList"></ul>
+      </div>
+      <div class="damage-card">
+        <div class="damage-head"><span class="eyebrow">CHASSIS INTEGRITY</span><b id="damagePct">100%</b></div>
+        <div class="damage-track"><i id="damageBar"></i></div>
+        <div class="damage-meta"><span id="damageState">NOMINAL</span><span id="repairNote">R TO REPAIR</span></div>
+      </div>
+    </div>
+
+    <div class="hud-right">
+      <div class="score-card">
+        <span class="eyebrow">STYLE SCORE</span>
+        <strong id="scoreValue">000000</strong>
+        <div class="combo-line"><span>COMBO</span><b id="comboValue">x1.0</b><i id="comboBar"></i></div>
+      </div>
+      <div class="objective-card">
+        <span class="eyebrow">NEXT OBJECTIVE</span>
+        <strong id="nextObjective">HIT THE BIG RAMP</strong>
+        <span>Find the chevrons in sector 04.</span>
+      </div>
+    </div>
+
+    <div class="event-toast" id="eventToast" aria-live="polite">
+      <span class="event-kicker">STUNT</span>
+      <strong id="eventTitle">AIRBORNE</strong>
+      <div class="event-points" id="eventPoints">+250</div>
+    </div>
+
+    <div class="speed-cluster">
+      <div class="speed-ring">
+        <svg viewBox="0 0 220 220" aria-hidden="true">
+          <circle class="ring-track" cx="110" cy="110" r="92"></circle>
+          <circle id="speedArc" class="ring-value" cx="110" cy="110" r="92"></circle>
+          <circle class="ring-inner" cx="110" cy="110" r="76"></circle>
+        </svg>
+        <div class="speed-readout">
+          <div class="speed-number" id="speedValue">0</div>
+          <div class="speed-unit">KM/H</div>
+          <div class="gear" id="gearValue">N</div>
+        </div>
+      </div>
+      <div class="rpm-wrap">
+        <div class="rpm-bar" id="rpmBar"></div>
+        <div class="rpm-meta"><span id="rpmValue">900</span><span>RPM</span><span id="boostValue">BOOST 0.0</span></div>
+        <div class="nitro-track"><i id="nitroBar"></i><span>NOS</span></div>
+      </div>
+    </div>
+
+    <div class="hud-help">
+      <span><b>W/S</b> THROTTLE</span><span><b>A/D</b> STEER</span><span><b>SPACE</b> DRIFT</span><span><b>SHIFT</b> NOS</span><span><b>C</b> CAMERA</span>
+    </div>
+
+    <div class="drift-status" id="driftStatus">DRIFT <b>0 m</b></div>
+
+    <div class="touch-controls" id="touchControls" aria-hidden="true">
+      <div class="touch-steer">
+        <button data-touch="left" aria-label="Steer left">◀</button>
+        <button data-touch="right" aria-label="Steer right">▶</button>
+      </div>
+      <div class="touch-pedals">
+        <button data-touch="handbrake" class="touch-small">DRIFT</button>
+        <button data-touch="nitro" class="touch-small nitro">NOS</button>
+        <button data-touch="brake" class="touch-pedal brake">BRAKE</button>
+        <button data-touch="gas" class="touch-pedal gas">GAS</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pauseOverlay" class="overlay pause-overlay" aria-hidden="true">
+    <div class="pause-card">
+      <span class="eyebrow">SIMULATION PAUSED</span>
+      <h2>TAKE A BREATHER.</h2>
+      <p>The car will wait. The wall will too.</p>
+      <button class="primary-button" id="resumeBtn">RESUME DRIVING <b>→</b></button>
+      <div class="pause-grid">
+        <button id="pauseResetBtn">REPAIR &amp; RESET</button>
+        <button id="pauseGarageBtn">RETURN TO GARAGE</button>
+      </div>
+      <div class="pause-meta">
+        <div><span>DAMAGE</span><b id="pauseDamage">0%</b></div>
+        <div><span>SCORE</span><b id="pauseScore">0</b></div>
+        <div><span>TOP SPEED</span><b id="pauseSpeed">0 KM/H</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="helpOverlay" class="overlay help-overlay" aria-hidden="true">
+    <div class="help-card">
+      <span class="eyebrow">DRIVER BRIEFING</span>
+      <h2>BUILD. SEND. REPEAT.</h2>
+      <div class="help-columns">
+        <div>
+          <h3>THE GARAGE</h3>
+          <p>Every card, colour and slider changes the actual car model and simulation. Continuous sliders mean the build space never runs out.</p>
+          <p><b>Drag</b> the showroom to orbit. <b>Scroll</b> to zoom. Use <b>Randomise</b> when you want the lab to surprise you.</p>
+        </div>
+        <div>
+          <h3>THE GROUNDS</h3>
+          <p>Chase the big ramp, the drift circle and the impact wall. Damage bends body panels in real time and can knock the wing clean off.</p>
+          <p><b>Repair</b> restores the car. <b>R</b> repairs on track. The score is for style, not survival.</p>
+        </div>
+      </div>
+      <div class="help-keys">
+        <span><b>WASD</b> DRIVE</span><span><b>SPACE</b> HANDBRAKE</span><span><b>SHIFT</b> NITROUS</span><span><b>C</b> CAMERA</span><span><b>ESC</b> PAUSE</span>
+      </div>
+      <button class="primary-button" id="closeHelpBtn">BACK TO THE LAB <b>→</b></button>
+    </div>
+  </div>
+
+  <div id="transition" class="transition" aria-hidden="true">
+    <div class="transition-word" id="transitionWord">SECTOR 04</div>
+    <div class="transition-line"></div>
+    <div class="transition-sub">PROVING GROUNDS / ENGINE HOT</div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
